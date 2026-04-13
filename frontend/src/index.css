@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Subtle grid background for the dashboard shell */
+body {
+  @apply min-h-screen bg-pulse-950 text-slate-100;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgb(56 189 248 / 0.15), transparent),
+    linear-gradient(rgb(15 23 42 / 0.9), rgb(15 23 42 / 0.98)),
+    linear-gradient(rgb(51 65 85 / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(51 65 85 / 0.12) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+  background-position: center, center, center, center;
+}

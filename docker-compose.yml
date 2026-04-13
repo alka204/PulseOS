@@ -1,0 +1,46 @@
+# PulseOS — Docker Compose (dev: live reload + named volumes for node_modules)
+#
+# Run from this directory:
+#   docker compose up --build
+#
+# Fixes applied:
+# - Explicit `build.context` + `build.dockerfile` so BuildKit always resolves the
+#   correct Dockerfile (avoids "invalid file request Dockerfile" / tiny ~31B reads).
+# - Removed obsolete top-level `version:` (Compose spec v2 no longer uses it).
+#
+# If build still fails on Windows + OneDrive, try disabling Compose Bake before building:
+#   PowerShell:  $env:COMPOSE_BAKE="false"; docker compose up --build
+#   CMD:         set COMPOSE_BAKE=false && docker compose up --build
+# Also ensure Dockerfiles are "Always available on this device" in OneDrive (not online-only).
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    privileged: true
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    command: sh -c "npm install && node server.js"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      VITE_API_URL: http://localhost:5000
+    command: sh -c "npm install && npm run dev"
+
+volumes:
+  backend_node_modules:
+  frontend_node_modules:
