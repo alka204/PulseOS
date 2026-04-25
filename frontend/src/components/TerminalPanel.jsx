@@ -1,57 +1,49 @@
 import { useState } from "react";
-import { API_BASE } from "../config";
 
-/**
- * Simple in-browser terminal: sends shell commands to POST /api/command.
- */
 export default function TerminalPanel() {
   const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(null);
+  const [lines, setLines] = useState([
+    "PulseOS Terminal v1.0",
+    "Type ls, pwd, whoami, or date",
+    "[AI] System nominal - all subsystems stable.",
+  ]);
 
-  async function run() {
+  function run() {
     const cmd = input.trim();
     if (!cmd) return;
+    const prompt = `pulse@dashboard:~$ ${cmd}`;
 
-    setBusy(true);
-    setErr(null);
-    setOutput("");
-
-    try {
-      const res = await fetch(`${API_BASE}/api/command`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command: cmd }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data.error || res.statusText || "Request failed");
-      }
-
-      const chunks = [];
-      if (data.stdout) chunks.push(data.stdout);
-      if (data.stderr) chunks.push(`[stderr]\n${data.stderr}`);
-      if (!data.ok && !data.stdout && !data.stderr) {
-        chunks.push("Command finished with no output.");
-      }
-      setOutput(chunks.join("\n").trim() || "(no output)");
-    } catch (e) {
-      setErr(e.message || String(e));
-    } finally {
-      setBusy(false);
+    let output;
+    switch (cmd.toLowerCase()) {
+      case "ls":
+        output = "components  logs  configs  modules";
+        break;
+      case "pwd":
+        output = "/opt/pulseos/dashboard";
+        break;
+      case "whoami":
+        output = "pulse-admin";
+        break;
+      case "date":
+        output = new Date().toString();
+        break;
+      default:
+        output = `Command not found: ${cmd}`;
     }
+
+    const aiLine =
+      Math.random() > 0.82
+        ? "[AI] Anomaly detected - memory spike observed."
+        : "[AI] System nominal - telemetry clean.";
+    setLines((prev) => [...prev, prompt, output, aiLine]);
+    setInput("");
   }
 
   return (
-    <section className="rounded-2xl border border-slate-700/60 bg-pulse-900/60 p-5 shadow-card backdrop-blur-sm">
+    <section className="glass-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-slate-100">Remote terminal</h2>
-        <p className="text-xs text-amber-200/80">
-          Runs on the server — use only in trusted environments.
-        </p>
+        <h2 className="text-lg font-semibold text-slate-100">Pulse Terminal</h2>
+        <p className="text-xs text-slate-400">Simulated command console with AI signals</p>
       </div>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -59,30 +51,22 @@ export default function TerminalPanel() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !busy && run()}
-          placeholder="e.g. node -v   or   echo hello"
-          className="flex-1 rounded-xl border border-slate-600 bg-pulse-950/80 px-4 py-2.5 font-mono text-sm text-slate-100 outline-none ring-cyan-400/40 placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-2"
-          disabled={busy}
+          onKeyDown={(e) => e.key === "Enter" && run()}
+          placeholder="Enter command..."
+          className="flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-2.5 font-mono text-sm text-slate-100 outline-none ring-accent/40 placeholder:text-slate-500 focus:border-accent/60 focus:ring-2"
           spellCheck={false}
         />
         <button
           type="button"
           onClick={run}
-          disabled={busy || !input.trim()}
-          className="rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 px-6 py-2.5 text-sm font-semibold text-pulse-950 shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!input.trim()}
+          className="rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-black shadow-lg shadow-[0_0_18px_var(--pulse-accent-glow)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {busy ? "Running…" : "Run"}
+          Run
         </button>
       </div>
-
-      {err && (
-        <p className="mt-3 text-sm text-red-300" role="alert">
-          {err}
-        </p>
-      )}
-
-      <pre className="mt-4 max-h-64 overflow-auto rounded-xl border border-slate-800 bg-black/40 p-4 font-mono text-xs leading-relaxed text-emerald-100/90">
-        {output || <span className="text-slate-600">Output appears here…</span>}
+      <pre className="mt-4 max-h-72 overflow-auto rounded-xl border border-white/10 bg-black/50 p-4 font-mono text-xs leading-relaxed text-emerald-100">
+        {lines.join("\n")}
       </pre>
     </section>
   );

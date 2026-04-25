@@ -1,87 +1,143 @@
-/**
- * Shows CPU / memory metrics from REST or live Socket.io payload.
- */
-export default function SystemPanel({ system, loading, error, live, lastUpdate }) {
+import { Battery, Cpu, HardDrive, MemoryStick } from "lucide-react";
+import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+
+export default function SystemPanel({ system, loading, error, thresholds }) {
   if (loading && !system) {
     return (
-      <div className="rounded-2xl border border-slate-700/60 bg-pulse-900/50 p-8 text-center text-slate-400 shadow-card">
-        Loading system metrics…
+      <div className="glass-card p-8 text-center">
+        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-accent/20 border-t-accent" />
+        <p className="text-slate-300">Collecting live system telemetry...</p>
       </div>
     );
   }
 
   if (error && !system) {
-    return (
-      <div className="rounded-2xl border border-red-500/40 bg-red-950/30 p-6 text-red-200 shadow-card">
-        <p className="font-semibold">Could not load system info</p>
-        <p className="mt-1 text-sm opacity-90">{error}</p>
-      </div>
-    );
+    return <div className="glass-card border-rose-500/40 p-5 text-rose-200">{error}</div>;
   }
 
   if (!system) return null;
 
-  const { cpu, memory, hostname, platform, uptimeSeconds } = system;
+  const cpu = Number(system.cpu?.usagePercent || 0);
+  const memory = Number(system.memory?.usedPercent || 0);
+  const disk = Number(system.disk?.usedPercent || 0);
+  const batteryValue =
+    system.battery?.hasBattery && typeof system.battery?.percent === "number"
+      ? Number(system.battery.percent)
+      : 100;
+  const batteryLabel = system.battery?.hasBattery ? `${batteryValue.toFixed(1)}%` : "N/A";
+
+  const status = getStatus(cpu, memory, disk, thresholds);
+  const bars = [
+    { name: "CPU", value: cpu, threshold: thresholds.cpu },
+    { name: "Memory", value: memory, threshold: thresholds.memory },
+    { name: "Disk", value: disk, threshold: thresholds.disk },
+    { name: "Battery", value: batteryValue, threshold: 20 },
+  ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <MetricCard
-        title="CPU"
-        accent={live ? "Live" : "REST"}
-        rows={[
-          ["Usage", `${cpu?.usagePercent ?? "—"}%`],
-          ["Cores", cpu?.cores ?? "—"],
-          ["Load (1m)", cpu?.loadAverage?.[0]?.toFixed(2) ?? "—"],
-        ]}
-        foot={cpu?.model}
-      />
-      <MetricCard
-        title="Memory"
-        accent={`${memory?.usedGB ?? "—"} / ${memory?.totalGB ?? "—"} GB`}
-        rows={[
-          ["Total", `${memory?.totalGB ?? "—"} GB`],
-          ["Free", `${memory?.freeGB ?? "—"} GB`],
-          ["Used", `${memory?.usedGB ?? "—"} GB`],
-        ]}
-      />
-      <MetricCard
-        title="Host"
-        accent={platform || "—"}
-        rows={[
-          ["Hostname", hostname || "—"],
-          ["Uptime", formatUptime(uptimeSeconds)],
-        ]}
-        foot={lastUpdate ? `Updated ${new Date(lastUpdate).toLocaleTimeString()}` : null}
-      />
-    </div>
-  );
-}
-
-function MetricCard({ title, accent, rows, foot }) {
-  return (
-    <div className="rounded-2xl border border-slate-700/60 bg-pulse-900/60 p-5 shadow-card backdrop-blur-sm">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">{title}</h3>
-        <span className="rounded-full bg-cyan-500/10 px-2 py-0.5 text-xs font-medium text-cyan-300">
-          {accent}
+    <section className="space-y-4">
+      <div className="glass-card flex items-center justify-between p-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">System Monitor</h2>
+          <p className="text-xs text-slate-400">Updated {new Date(system.updatedAt || Date.now()).toLocaleTimeString()}</p>
+        </div>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-medium ${
+            status === "Stable"
+              ? "bg-emerald-500/20 text-emerald-300"
+              : status === "Warning"
+                ? "bg-amber-500/20 text-amber-300"
+                : "bg-rose-500/20 text-rose-300"
+          }`}
+        >
+          {status}
         </span>
       </div>
-      <dl className="mt-4 space-y-2">
-        {rows.map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-4 text-sm">
-            <dt className="text-slate-500">{k}</dt>
-            <dd className="font-mono text-slate-100">{v}</dd>
-          </div>
-        ))}
-      </dl>
-      {foot && <p className="mt-3 border-t border-slate-700/50 pt-3 text-xs text-slate-500">{foot}</p>}
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard icon={Cpu} label="CPU" value={`${cpu.toFixed(1)}%`} detail={`Threshold ${thresholds.cpu}%`} />
+        <MetricCard
+          icon={MemoryStick}
+          label="Memory"
+          value={`${system.memory?.usedGB ?? 0}GB / ${system.memory?.totalGB ?? 0}GB`}
+          detail={`${memory.toFixed(1)}% used`}
+        />
+        <MetricCard
+          icon={HardDrive}
+          label="Disk"
+          value={`${system.disk?.usedGB ?? 0}GB / ${system.disk?.totalGB ?? 0}GB`}
+          detail={`${disk.toFixed(1)}% used`}
+        />
+        <MetricCard icon={Battery} label="Battery" value={batteryLabel} detail={system.battery?.isCharging ? "Charging" : "Discharging"} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="glass-card h-64 p-4">
+          <p className="mb-3 text-sm font-medium text-slate-300">Resource Utilization</p>
+          <ResponsiveContainer width="100%" height="90%">
+            <BarChart data={bars}>
+              <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                {bars.map((entry) => (
+                  <Cell
+                    key={entry.name}
+                    fill={
+                      entry.name === "Battery"
+                        ? "var(--pulse-accent)"
+                        : entry.value >= entry.threshold
+                          ? "#fb7185"
+                          : "var(--pulse-accent)"
+                    }
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="glass-card h-64 p-4">
+          <p className="mb-3 text-sm font-medium text-slate-300">Load Distribution</p>
+          <ResponsiveContainer width="100%" height="90%">
+            <PieChart>
+              <Pie
+                data={[
+                  { name: "CPU", value: cpu },
+                  { name: "Memory", value: memory },
+                  { name: "Disk", value: disk },
+                ]}
+                dataKey="value"
+                nameKey="name"
+                outerRadius={85}
+              >
+                <Cell fill="var(--pulse-accent)" />
+                <Cell fill="#60a5fa" />
+                <Cell fill="#a78bfa" />
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MetricCard({ icon: Icon, label, value, detail }) {
+  return (
+    <div className="glass-card p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
+        <Icon size={16} className="text-accent" />
+      </div>
+      <p className="font-mono text-lg text-white">{value}</p>
+      <p className="text-xs text-slate-400">{detail}</p>
     </div>
   );
 }
 
-function formatUptime(sec) {
-  if (sec == null || Number.isNaN(sec)) return "—";
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  return `${h}h ${m}m`;
+function getStatus(cpu, memory, disk, thresholds) {
+  if (cpu >= thresholds.cpu + 10 || memory >= thresholds.memory + 10 || disk >= thresholds.disk + 10) {
+    return "Critical";
+  }
+  if (cpu >= thresholds.cpu || memory >= thresholds.memory || disk >= thresholds.disk) {
+    return "Warning";
+  }
+  return "Stable";
 }
