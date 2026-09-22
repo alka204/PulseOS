@@ -6,7 +6,18 @@ function toGB(bytes) {
 }
 
 async function getSystemSnapshot() {
-  const [load, mem, fs, time, battery, osInfo, cpuInfo, networkStats, processes, netIfaces] = await Promise.all([
+  const [
+    load,
+    mem,
+    fs,
+    time,
+    battery,
+    osInfo,
+    cpuInfo,
+    networkStats,
+    processes,
+    netIfaces,
+  ] = await Promise.all([
     si.currentLoad(),
     si.mem(),
     si.fsSize(),
@@ -20,12 +31,19 @@ async function getSystemSnapshot() {
   ]);
 
   const rootDisk =
-    fs.find((disk) => disk.mount === "/" || disk.mount === "C:") || fs[0] || null;
+    fs.find((disk) => disk.mount === "/" || disk.mount === "C:") ||
+    fs[0] ||
+    null;
   const diskUsedPercent = rootDisk ? Number(rootDisk.use.toFixed(1)) : 0;
 
-  const network = Array.isArray(networkStats) && networkStats.length > 0 ? networkStats[0] : null;
+  const network =
+    Array.isArray(networkStats) && networkStats.length > 0
+      ? networkStats[0]
+      : null;
   const primaryIface =
-    netIfaces.find((iface) => iface.default || (iface.ip4 && !iface.internal)) ||
+    netIfaces.find(
+      (iface) => iface.default || (iface.ip4 && !iface.internal),
+    ) ||
     netIfaces.find((iface) => iface.ip4) ||
     netIfaces[0] ||
     null;
@@ -33,6 +51,32 @@ async function getSystemSnapshot() {
   const diskTotal = rootDisk ? rootDisk.size : 0;
   const diskUsed = rootDisk ? rootDisk.used : 0;
   const diskFree = Math.max(0, diskTotal - diskUsed);
+  const alerts = [];
+
+  if (load.currentLoad >= 80) {
+    alerts.push({
+      type: "warning",
+      title: "High CPU Usage",
+      message: `CPU usage is ${load.currentLoad.toFixed(1)}%`,
+    });
+  }
+
+  const memoryPercent = (mem.used / mem.total) * 100;
+  if (memoryPercent >= 80) {
+    alerts.push({
+      type: "warning",
+      title: "High Memory Usage",
+      message: `Memory usage is ${memoryPercent.toFixed(1)}%`,
+    });
+  }
+
+  if (diskUsedPercent >= 85) {
+    alerts.push({
+      type: "warning",
+      title: "Low Disk Space",
+      message: `Disk usage is ${diskUsedPercent}%`,
+    });
+  }
 
   return {
     cpu: {
@@ -65,13 +109,16 @@ async function getSystemSnapshot() {
     },
     battery: {
       hasBattery: Boolean(battery?.hasBattery),
-      percent: battery?.hasBattery ? Number((battery.percent ?? 0).toFixed(1)) : null,
+      percent: battery?.hasBattery
+        ? Number((battery.percent ?? 0).toFixed(1))
+        : null,
       isCharging: Boolean(battery?.isCharging),
     },
     uptime: uptimeSeconds,
     hostname: os.hostname(),
     os: osInfo.platform,
-    osVersion: `${osInfo.distro || osInfo.platform || "Unknown"} ${osInfo.release || ""}`.trim(),
+    osVersion:
+      `${osInfo.distro || osInfo.platform || "Unknown"} ${osInfo.release || ""}`.trim(),
     architecture: os.arch(),
     platform: osInfo.platform,
     network: {
@@ -90,6 +137,7 @@ async function getSystemSnapshot() {
       nodeVersion: process.version,
       status: "Running",
     },
+    alerts,
     updatedAt: new Date().toISOString(),
   };
 }

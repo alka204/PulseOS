@@ -1,6 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Box, ChevronDown, Cpu, Search, Settings, SlidersHorizontal, UserCircle2 } from "lucide-react";
-import { Link, Navigate, NavLink, Outlet, Route, Routes, useOutletContext } from "react-router-dom";
+import {
+  Activity,
+  Box,
+  ChevronDown,
+  Cpu,
+  Search,
+  Settings,
+  SlidersHorizontal,
+  UserCircle2,
+} from "lucide-react";
+import {
+  Link,
+  Navigate,
+  NavLink,
+  Outlet,
+  Route,
+  Routes,
+  useOutletContext,
+  useNavigate,
+} from "react-router-dom";
 import { API_BASE } from "./config";
 import Login from "./components/Login.jsx";
 import Overview from "./components/Overview.jsx";
@@ -35,17 +53,29 @@ export default function App() {
     <Routes>
       <Route
         path="/login"
-        element={token ? <Navigate to="/" replace /> : <Login onAuthenticated={handleAuthenticated} />}
+        element={
+          token ? (
+            <Navigate to="/" replace />
+          ) : (
+            <Login onAuthenticated={handleAuthenticated} />
+          )
+        }
       />
       <Route element={<ProtectedRoute token={token} />}>
-        <Route path="/" element={<DashboardLayout onLogout={logout} user={user} />}>
+        <Route
+          path="/"
+          element={<DashboardLayout onLogout={logout} user={user} />}
+        >
           <Route index element={<OverviewPage />} />
           <Route path="host" element={<HostDetailsPage />} />
           <Route path="docker" element={<DockerMonitorPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
+      <Route
+        path="*"
+        element={<Navigate to={token ? "/" : "/login"} replace />}
+      />
     </Routes>
   );
 }
@@ -54,7 +84,9 @@ function SectionTitle({ title, icon: Icon }) {
   return (
     <div className="flex items-center gap-2">
       <Icon size={14} className="text-accent" />
-      <h3 className="text-sm font-semibold tracking-[0.16em] text-main">{title}</h3>
+      <h3 className="text-sm font-semibold tracking-[0.16em] text-main">
+        {title}
+      </h3>
     </div>
   );
 }
@@ -69,16 +101,26 @@ function DashboardLayout({ onLogout, user }) {
   const [systemLoading, setSystemLoading] = useState(false);
   const [systemError, setSystemError] = useState(null);
   const [refreshInterval, setRefreshInterval] = useState("2s");
-  const [channels, setChannels] = useState({ email: true, slack: false, discord: false });
-  const [thresholds, setThresholds] = useState({ cpu: 80, memory: 80, disk: 85 });
+  const [channels, setChannels] = useState({
+    email: true,
+    slack: false,
+    discord: false,
+  });
+  const [thresholds, setThresholds] = useState({
+    cpu: 80,
+    memory: 80,
+    disk: 85,
+  });
   const [themeMode, setThemeMode] = useState("green");
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
   const [savedState, setSavedState] = useState(() =>
     JSON.stringify({
       thresholds: { cpu: 80, memory: 80, disk: 85 },
       channels: { email: true, slack: false, discord: false },
       refreshInterval: "2s",
       themeMode: "green",
-    })
+    }),
   );
 
   useEffect(() => {
@@ -106,7 +148,8 @@ function DashboardLayout({ onLogout, user }) {
       try {
         const res = await fetch(`${API_BASE}/api/system`);
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to fetch system data");
+        if (!res.ok)
+          throw new Error(data.error || "Failed to fetch system data");
         if (!cancelled) {
           setSystem(data);
           setSystemError(null);
@@ -140,17 +183,32 @@ function DashboardLayout({ onLogout, user }) {
     (system?.cpu?.usagePercent ?? 0) < thresholds.cpu &&
     (system?.memory?.usedPercent ?? 0) < thresholds.memory &&
     (system?.disk?.usedPercent ?? 0) < thresholds.disk;
-  const status = isStable ? "Stable" : (system?.cpu?.usagePercent ?? 0) > thresholds.cpu + 10 ? "Critical" : "Warning";
+  const status = isStable
+    ? "Stable"
+    : (system?.cpu?.usagePercent ?? 0) > thresholds.cpu + 10
+      ? "Critical"
+      : "Warning";
 
   const hasUnsavedChanges = useMemo(() => {
-    const current = JSON.stringify({ thresholds, channels, refreshInterval, themeMode });
+    const current = JSON.stringify({
+      thresholds,
+      channels,
+      refreshInterval,
+      themeMode,
+    });
     return current !== savedState;
   }, [channels, refreshInterval, savedState, themeMode, thresholds]);
 
   function applyChanges() {
-    const nextSaved = JSON.stringify({ thresholds, channels, refreshInterval, themeMode });
+    const nextSaved = JSON.stringify({
+      thresholds,
+      channels,
+      refreshInterval,
+      themeMode,
+    });
     setSavedState(nextSaved);
     localStorage.setItem("pulse-dashboard-config", nextSaved);
+    alert("✅ Settings applied successfully!");
   }
 
   function discardChanges() {
@@ -159,6 +217,29 @@ function DashboardLayout({ onLogout, user }) {
     setChannels(parsed.channels);
     setRefreshInterval(parsed.refreshInterval);
     setThemeMode(parsed.themeMode);
+  }
+  function exportLogs() {
+    const report = `
+PulseOS System Report
+
+Hostname: ${system?.hostname || "Unknown"}
+CPU: ${system?.cpu?.usagePercent ?? 0}%
+Memory: ${system?.memory?.usedPercent ?? 0}%
+Disk: ${system?.disk?.usedPercent ?? 0}%
+Status: ${status}
+
+Generated: ${new Date().toLocaleString()}
+`;
+
+    const blob = new Blob([report], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pulseos-system-report.txt";
+    a.click();
+
+    URL.revokeObjectURL(url);
   }
 
   const shared = {
@@ -180,7 +261,10 @@ function DashboardLayout({ onLogout, user }) {
     <div className="min-h-screen bg-shell text-main">
       <aside className="fixed left-0 top-0 flex h-screen w-[260px] flex-col border-r border-white/10 bg-sidebar">
         <div className="border-b border-white/10 px-5 py-5">
-          <Link to="/" className="text-xl font-semibold tracking-wide text-main">
+          <Link
+            to="/"
+            className="text-xl font-semibold tracking-wide text-main"
+          >
             PulseOS
           </Link>
         </div>
@@ -193,7 +277,9 @@ function DashboardLayout({ onLogout, user }) {
                   key={item.to}
                   to={item.to}
                   end={item.to === "/"}
-                  className={({ isActive }) => `menu-item ${isActive ? "menu-item-active" : ""}`}
+                  className={({ isActive }) =>
+                    `menu-item ${isActive ? "menu-item-active" : ""}`
+                  }
                 >
                   <Icon size={15} />
                   <span>{item.label}</span>
@@ -207,7 +293,9 @@ function DashboardLayout({ onLogout, user }) {
             <UserCircle2 size={16} className="text-accent" />
             <div className="flex-1">
               <p className="text-xs text-main">Admin</p>
-              <p className="text-[11px] text-muted">{user?.username || "admin"}</p>
+              <p className="text-[11px] text-muted">
+                {user?.username || "admin"}
+              </p>
             </div>
             <button type="button" className="logout-link" onClick={onLogout}>
               Logout
@@ -219,18 +307,62 @@ function DashboardLayout({ onLogout, user }) {
       <main className="ml-[260px] min-h-screen px-6 pb-24 pt-4">
         <header className="topbar">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted">System Name</p>
-            <h2 className="text-lg font-medium text-main">{system?.hostname || "Loading host..."}</h2>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted">
+              System Name
+            </p>
+            <h2 className="text-lg font-medium text-main">
+              {system?.hostname || "Loading host..."}
+            </h2>
           </div>
-          <p className={`text-xs font-semibold tracking-wide ${isStable ? "text-accent" : "text-red-400"}`}>
+          <p
+            className={`text-xs font-semibold tracking-wide ${isStable ? "text-accent" : "text-red-400"}`}
+          >
             {isStable ? "SYSTEM STABLE" : "SYSTEM WARNING"}
           </p>
           <div className="search-wrap">
             <Search size={14} className="text-muted" />
-            <input className="search-input" placeholder="Search commands or settings" />
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Search commands or settings"
+              value={search}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearch(value);
+
+                const query = value.trim().toLowerCase();
+
+                if (query === "") return;
+
+                if (
+                  query.includes("overview") ||
+                  query.includes("home") ||
+                  query.includes("dashboard")
+                ) {
+                  navigate("/");
+                } else if (
+                  query.includes("host") ||
+                  query.includes("system") ||
+                  query.includes("details")
+                ) {
+                  navigate("/host");
+                } else if (
+                  query.includes("docker") ||
+                  query.includes("container")
+                ) {
+                  navigate("/docker");
+                } else if (
+                  query.includes("setting") ||
+                  query.includes("config") ||
+                  query.includes("preference")
+                ) {
+                  navigate("/settings");
+                }
+              }}
+            />
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" className="btn-muted">
+            <button type="button" className="btn-muted" onClick={exportLogs}>
               EXPORT LOGS
             </button>
             <button type="button" className="btn-accent" onClick={applyChanges}>
@@ -244,12 +376,22 @@ function DashboardLayout({ onLogout, user }) {
 
       {hasUnsavedChanges && (
         <div className="alert-bar">
-          <p className="text-xs font-semibold tracking-wide text-red-100">UNSAVED CHANGES DETECTED</p>
+          <p className="text-xs font-semibold tracking-wide text-red-100">
+            UNSAVED CHANGES DETECTED
+          </p>
           <div className="flex items-center gap-2">
-            <button type="button" className="alert-btn" onClick={discardChanges}>
+            <button
+              type="button"
+              className="alert-btn"
+              onClick={discardChanges}
+            >
               Discard
             </button>
-            <button type="button" className="alert-btn alert-btn-strong" onClick={applyChanges}>
+            <button
+              type="button"
+              className="alert-btn alert-btn-strong"
+              onClick={applyChanges}
+            >
               Apply Force
             </button>
           </div>
@@ -262,14 +404,23 @@ function DashboardLayout({ onLogout, user }) {
 function OverviewPage() {
   const { system, systemLoading, systemError, status } = useOutletContext();
   return (
-    <Overview system={system} systemLoading={systemLoading} systemError={systemError} status={status} />
+    <Overview
+      system={system}
+      systemLoading={systemLoading}
+      systemError={systemError}
+      status={status}
+    />
   );
 }
 
 function HostDetailsPage() {
   const { system, systemLoading, systemError } = useOutletContext();
   return (
-    <HostDetails system={system} systemLoading={systemLoading} systemError={systemError} />
+    <HostDetails
+      system={system}
+      systemLoading={systemLoading}
+      systemError={systemError}
+    />
   );
 }
 
@@ -306,28 +457,57 @@ function SettingsPage() {
       <section className="panel">
         <SectionTitle title="SYSTEM CONFIGURATION" icon={SlidersHorizontal} />
         <p className="mt-2 text-sm text-muted">
-          Environment: {system?.os || system?.platform || "unknown"} · Host: {system?.hostname || "unavailable"} · Uptime:{" "}
+          Environment: {system?.os || system?.platform || "unknown"} · Host:{" "}
+          {system?.hostname || "unavailable"} · Uptime:{" "}
           {system?.uptime ? `${Math.floor(system.uptime / 3600)}h` : "n/a"}
         </p>
-        {systemLoading && <p className="mt-2 text-xs text-muted">Loading host telemetry...</p>}
-        {systemError && <p className="mt-2 text-xs text-red-400">{systemError}</p>}
+        {systemLoading && (
+          <p className="mt-2 text-xs text-muted">Loading host telemetry...</p>
+        )}
+        {systemError && (
+          <p className="mt-2 text-xs text-red-400">{systemError}</p>
+        )}
       </section>
 
       <section className="panel">
         <SectionTitle title="ALERT THRESHOLDS" icon={Cpu} />
         <div className="mt-3 space-y-3">
-          <SliderRow label="CPU Usage %" value={thresholds.cpu} onChange={(v) => updateThreshold("cpu", v)} />
-          <SliderRow label="Memory Usage %" value={thresholds.memory} onChange={(v) => updateThreshold("memory", v)} />
-          <SliderRow label="Disk Space %" value={thresholds.disk} onChange={(v) => updateThreshold("disk", v)} />
+          <SliderRow
+            label="CPU Usage %"
+            value={thresholds.cpu}
+            onChange={(v) => updateThreshold("cpu", v)}
+          />
+          <SliderRow
+            label="Memory Usage %"
+            value={thresholds.memory}
+            onChange={(v) => updateThreshold("memory", v)}
+          />
+          <SliderRow
+            label="Disk Space %"
+            value={thresholds.disk}
+            onChange={(v) => updateThreshold("disk", v)}
+          />
         </div>
       </section>
 
       <section className="panel">
         <SectionTitle title="CHANNELS" icon={Activity} />
         <div className="mt-3 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
-          <SwitchRow label="Email" checked={channels.email} onToggle={() => toggleChannel("email")} />
-          <SwitchRow label="Slack" checked={channels.slack} onToggle={() => toggleChannel("slack")} />
-          <SwitchRow label="Discord" checked={channels.discord} onToggle={() => toggleChannel("discord")} />
+          <SwitchRow
+            label="Email"
+            checked={channels.email}
+            onToggle={() => toggleChannel("email")}
+          />
+          <SwitchRow
+            label="Slack"
+            checked={channels.slack}
+            onToggle={() => toggleChannel("slack")}
+          />
+          <SwitchRow
+            label="Discord"
+            checked={channels.discord}
+            onToggle={() => toggleChannel("discord")}
+          />
         </div>
       </section>
 
@@ -348,11 +528,17 @@ function SettingsPage() {
         <SectionTitle title="SYSTEM PREFERENCES" icon={Settings} />
         <div className="mt-3 grid gap-4 md:grid-cols-2">
           <div>
-            <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted">Data Refresh Interval</p>
+            <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted">
+              Data Refresh Interval
+            </p>
             <label className="select-wrap">
               <span>{refreshInterval}</span>
               <ChevronDown size={14} className="text-muted" />
-              <select value={refreshInterval} onChange={(e) => setRefreshInterval(e.target.value)} className="native-select">
+              <select
+                value={refreshInterval}
+                onChange={(e) => setRefreshInterval(e.target.value)}
+                className="native-select"
+              >
                 <option value="1s">1s</option>
                 <option value="2s">2s</option>
                 <option value="5s">5s</option>
@@ -361,7 +547,9 @@ function SettingsPage() {
             </label>
           </div>
           <div>
-            <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted">Theme Options</p>
+            <p className="mb-2 text-xs uppercase tracking-[0.16em] text-muted">
+              Theme Options
+            </p>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -392,7 +580,14 @@ function SliderRow({ label, value, onChange }) {
         <span className="text-main">{label}</span>
         <span className="font-mono text-accent">{value}%</span>
       </div>
-      <input type="range" min="40" max="98" value={value} onChange={(e) => onChange(e.target.value)} className="pulse-slider" />
+      <input
+        type="range"
+        min="40"
+        max="98"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="pulse-slider"
+      />
     </label>
   );
 }
@@ -401,7 +596,12 @@ function SwitchRow({ label, checked, onToggle }) {
   return (
     <div className="switch-row">
       <span className="text-sm text-main">{label}</span>
-      <button type="button" className={`switch ${checked ? "switch-on" : ""}`} onClick={onToggle} aria-label={label}>
+      <button
+        type="button"
+        className={`switch ${checked ? "switch-on" : ""}`}
+        onClick={onToggle}
+        aria-label={label}
+      >
         <span className="switch-thumb" />
       </button>
     </div>
