@@ -115,7 +115,20 @@ function DashboardLayout({ onLogout, user }) {
     memory: 80,
     disk: 85,
   });
-  const [themeMode, setThemeMode] = useState("green");
+  const [themeMode, setThemeMode] = useState(() => {
+    const persisted = localStorage.getItem("pulse-dashboard-config");
+    if (persisted) {
+      try {
+        const parsed = JSON.parse(persisted);
+        if (parsed.themeMode === "light" || parsed.themeMode === "dark") {
+          return parsed.themeMode;
+        }
+      } catch {
+        // Ignore malformed persisted UI configuration.
+      }
+    }
+    return "dark";
+  });
   const [search, setSearch] = useState("");
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [terminalCmd, setTerminalCmd] = useState(null);
@@ -125,9 +138,13 @@ function DashboardLayout({ onLogout, user }) {
       thresholds: { cpu: 80, memory: 80, disk: 85 },
       channels: { email: true, slack: false, discord: false },
       refreshInterval: "2s",
-      themeMode: "green",
+      themeMode: "dark",
     }),
   );
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", themeMode || "dark");
+  }, [themeMode]);
 
   useEffect(() => {
     const persisted = localStorage.getItem("pulse-dashboard-config");
@@ -137,7 +154,9 @@ function DashboardLayout({ onLogout, user }) {
       setThresholds(parsed.thresholds);
       setChannels(parsed.channels);
       setRefreshInterval(parsed.refreshInterval);
-      setThemeMode(parsed.themeMode);
+      if (parsed.themeMode === "light" || parsed.themeMode === "dark") {
+        setThemeMode(parsed.themeMode);
+      }
       setSavedState(persisted);
     } catch {
       // Ignore malformed persisted UI configuration.
@@ -268,7 +287,7 @@ Generated: ${new Date().toLocaleString()}
   };
 
   return (
-    <div className="min-h-screen bg-shell text-main">
+    <div className="min-h-screen bg-shell text-main" data-theme={themeMode}>
       <aside className="fixed left-0 top-0 flex h-screen w-[260px] flex-col border-r border-white/10 bg-sidebar">
         <div className="border-b border-white/10 px-5 py-5">
           <Link
@@ -395,19 +414,6 @@ Generated: ${new Date().toLocaleString()}
               }}
             />
           </div>
-          <button
-            type="button"
-            onClick={toggleTerminal}
-            className={`rounded-lg p-2 transition ${
-              terminalOpen
-                ? "bg-accent/20 text-accent"
-                : "text-muted hover:bg-white/10 hover:text-main"
-            }`}
-            aria-label="Toggle terminal"
-            title="Toggle terminal"
-          >
-            <Terminal size={16} />
-          </button>
           <div className="flex items-center gap-2">
             <button type="button" className="btn-muted" onClick={exportLogs}>
               EXPORT LOGS
@@ -609,17 +615,17 @@ function SettingsPage() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setThemeMode("green")}
-                className={`theme-pill ${themeMode === "green" ? "theme-pill-active" : ""}`}
+                onClick={() => setThemeMode("dark")}
+                className={`theme-pill ${themeMode === "dark" ? "theme-pill-active" : ""}`}
               >
-                Pulse Green
+                Dark
               </button>
               <button
                 type="button"
-                onClick={() => setThemeMode("red")}
-                className={`theme-pill ${themeMode === "red" ? "theme-pill-red" : ""}`}
+                onClick={() => setThemeMode("light")}
+                className={`theme-pill ${themeMode === "light" ? "theme-pill-active" : ""}`}
               >
-                Pulse Red
+                Light
               </button>
             </div>
           </div>

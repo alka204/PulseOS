@@ -2,13 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root,
+[data-theme="dark"] {
   --bg-main: #0a0f1c;
   --bg-sidebar: #0d1326;
+  --bg-topbar: rgba(13, 19, 38, 0.65);
+  --bg-panel: rgba(13, 19, 38, 0.5);
+  --bg-card: rgba(10, 15, 28, 0.45);
+  --bg-input: rgba(10, 15, 28, 0.7);
+  --bg-menu-hover: rgba(230, 237, 243, 0.08);
+  --bg-menu-active: rgba(0, 255, 156, 0.08);
+  --border-color: rgba(230, 237, 243, 0.1);
+  --border-color-muted: rgba(230, 237, 243, 0.12);
+  --border-color-active: rgba(0, 255, 156, 0.25);
   --accent-green: #00ff9c;
   --accent-green-2: #00d084;
+  --accent-glow: rgba(0, 255, 156, 0.18);
   --text-main: #e6edf3;
   --text-muted: #8b949e;
+  --shadow-glow: inset 0 0 0 1px rgba(0, 255, 156, 0.05), 0 0 14px rgba(0, 255, 156, 0.1);
+  --switch-bg: rgba(10, 15, 28, 0.5);
+  --switch-border: rgba(230, 237, 243, 0.25);
+  --switch-thumb: #8b949e;
+  --terminal-bg: rgba(5, 14, 28, 0.85);
+}
+
+[data-theme="light"] {
+  --bg-main: #f1f5f9;
+  --bg-sidebar: #ffffff;
+  --bg-topbar: rgba(255, 255, 255, 0.9);
+  --bg-panel: #ffffff;
+  --bg-card: #f8fafc;
+  --bg-input: #ffffff;
+  --bg-menu-hover: rgba(15, 23, 42, 0.05);
+  --bg-menu-active: rgba(5, 150, 105, 0.08);
+  --border-color: rgba(15, 23, 42, 0.09);
+  --border-color-muted: rgba(15, 23, 42, 0.14);
+  --border-color-active: rgba(5, 150, 105, 0.35);
+  --accent-green: #059669;
+  --accent-green-2: #10b981;
+  --accent-glow: rgba(5, 150, 105, 0.15);
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --shadow-glow: inset 0 0 0 1px rgba(5, 150, 105, 0.08), 0 2px 10px rgba(5, 150, 105, 0.1);
+  --switch-bg: #e2e8f0;
+  --switch-border: rgba(15, 23, 42, 0.18);
+  --switch-thumb: #64748b;
+  --terminal-bg: rgba(15, 23, 42, 0.95);
 }
 
 body {
@@ -17,14 +57,17 @@ body {
   background: var(--bg-main);
   color: var(--text-main);
   font-family: "DM Sans", system-ui, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .bg-shell {
   background: var(--bg-main);
+  transition: background-color 0.25s ease;
 }
 
 .bg-sidebar {
   background: var(--bg-sidebar);
+  transition: background-color 0.25s ease;
 }
 
 .text-accent {
@@ -57,29 +100,30 @@ body {
 
 .menu-item:hover {
   color: var(--text-main);
-  border-color: rgb(230 237 243 / 0.08);
+  background: var(--bg-menu-hover);
+  border-color: var(--border-color);
 }
 
 .menu-item-active {
   color: var(--text-main);
   border-left-color: var(--accent-green);
-  border-color: rgb(0 255 156 / 0.25);
-  background: rgb(0 255 156 / 0.08);
-  box-shadow: inset 0 0 0 1px rgb(0 255 156 / 0.05), 0 0 14px rgb(0 255 156 / 0.1);
+  border-color: var(--border-color-active);
+  background: var(--bg-menu-active);
+  box-shadow: var(--shadow-glow);
 }
 
 .user-chip {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  border: 1px solid rgb(230 237 243 / 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   padding: 0.6rem;
-  background: rgb(10 15 28 / 0.45);
+  background: var(--bg-card);
 }
 
 .logout-link {
-  border: 1px solid rgb(230 237 243 / 0.25);
+  border: 1px solid var(--border-color-muted);
   border-radius: 0.3rem;
   background: transparent;
   color: var(--text-muted);
@@ -89,7 +133,7 @@ body {
 
 .logout-link:hover {
   color: var(--text-main);
-  border-color: rgb(0 255 156 / 0.4);
+  border-color: var(--accent-green);
 }
 
 .topbar {
@@ -97,19 +141,20 @@ body {
   grid-template-columns: auto auto 1fr auto;
   gap: 0.75rem;
   align-items: center;
-  border: 1px solid rgb(230 237 243 / 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 0.4rem;
-  background: rgb(13 19 38 / 0.6);
+  background: var(--bg-topbar);
   padding: 0.65rem 0.85rem;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .search-wrap {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  border: 1px solid rgb(230 237 243 / 0.12);
+  border: 1px solid var(--border-color-muted);
   border-radius: 0.4rem;
-  background: rgb(10 15 28 / 0.7);
+  background: var(--bg-input);
   padding: 0.4rem 0.6rem;
 }
 
@@ -128,10 +173,12 @@ body {
 
 .panel {
   margin-top: 0.75rem;
-  border: 1px solid rgb(230 237 243 / 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 0.4rem;
-  background: rgb(13 19 38 / 0.5);
+  background: var(--bg-panel);
   padding: 0.9rem;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .overview-grid {
@@ -161,7 +208,7 @@ body {
 
 .status-dot-on {
   background: var(--accent-green);
-  box-shadow: 0 0 10px rgb(0 255 156 / 0.45);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .status-dot-off {
@@ -176,7 +223,7 @@ body {
 
 .docker-table th,
 .docker-table td {
-  border-bottom: 1px solid rgb(230 237 243 / 0.08);
+  border-bottom: 1px solid var(--border-color);
   text-align: left;
   padding: 0.5rem 0.45rem;
   white-space: nowrap;
@@ -193,28 +240,28 @@ body {
 }
 
 .docker-table tbody tr:hover {
-  background: rgb(0 255 156 / 0.05);
+  background: var(--bg-menu-hover);
 }
 
 .docker-row-selected {
-  background: rgb(0 255 156 / 0.1);
+  background: var(--bg-menu-active);
 }
 
 .docker-info-block {
-  border: 1px solid rgb(230 237 243 / 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 0.35rem;
   padding: 0.6rem;
-  background: rgb(10 15 28 / 0.45);
+  background: var(--bg-card);
 }
 
 .docker-logs {
   margin-top: 0.5rem;
   max-height: 260px;
   overflow: auto;
-  border: 1px solid rgb(230 237 243 / 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 0.35rem;
-  background: rgb(6 10 18 / 0.95);
-  color: rgb(209 250 229);
+  background: var(--bg-input);
+  color: var(--text-main);
   padding: 0.65rem;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.75rem;
@@ -224,25 +271,31 @@ body {
 .btn-muted,
 .btn-accent,
 .btn-danger {
-  border: 1px solid rgb(230 237 243 / 0.15);
+  border: 1px solid var(--border-color-muted);
   border-radius: 0.35rem;
-  background: rgb(10 15 28 / 0.9);
+  background: var(--bg-card);
   color: var(--text-main);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   padding: 0.45rem 0.7rem;
+  transition: all 0.15s ease;
+}
+
+.btn-muted:hover {
+  background: var(--bg-menu-hover);
 }
 
 .btn-accent {
-  border-color: rgb(0 255 156 / 0.45);
+  border-color: var(--accent-green);
+  background: var(--bg-menu-active);
   color: var(--accent-green);
-  box-shadow: 0 0 10px rgb(0 255 156 / 0.18);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .btn-danger {
   border-color: rgb(248 113 113 / 0.35);
-  color: rgb(254 202 202);
+  color: rgb(248 113 113);
 }
 
 .pulse-slider {
@@ -259,18 +312,18 @@ body {
   height: 10px;
   border-radius: 999px;
   background: var(--accent-green);
-  border: 1px solid rgb(0 208 132 / 0.7);
-  box-shadow: 0 0 10px rgb(0 255 156 / 0.35);
+  border: 1px solid var(--accent-green-2);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .switch-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid rgb(230 237 243 / 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   padding: 0.55rem 0.7rem;
-  background: rgb(10 15 28 / 0.5);
+  background: var(--bg-card);
 }
 
 .switch {
@@ -278,8 +331,8 @@ body {
   width: 40px;
   height: 20px;
   border-radius: 999px;
-  border: 1px solid rgb(230 237 243 / 0.25);
-  background: transparent;
+  border: 1px solid var(--switch-border);
+  background: var(--switch-bg);
   transition: all 0.15s ease;
 }
 
@@ -290,13 +343,13 @@ body {
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  background: rgb(139 148 158);
+  background: var(--switch-thumb);
   transition: all 0.15s ease;
 }
 
 .switch-on {
-  border-color: rgb(0 255 156 / 0.65);
-  background: rgb(0 255 156 / 0.15);
+  border-color: var(--accent-green);
+  background: var(--bg-menu-active);
 }
 
 .switch-on .switch-thumb {
@@ -307,9 +360,9 @@ body {
 .api-input {
   min-width: 320px;
   flex: 1;
-  border: 1px solid rgb(230 237 243 / 0.16);
+  border: 1px solid var(--border-color-muted);
   border-radius: 0.35rem;
-  background: rgb(10 15 28 / 0.8);
+  background: var(--bg-input);
   color: var(--text-muted);
   padding: 0.48rem 0.65rem;
   font-family: "JetBrains Mono", ui-monospace, monospace;
@@ -321,9 +374,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid rgb(230 237 243 / 0.16);
+  border: 1px solid var(--border-color-muted);
   border-radius: 0.35rem;
-  background: rgb(10 15 28 / 0.8);
+  background: var(--bg-input);
   color: var(--text-main);
   font-size: 0.85rem;
   padding: 0.5rem 0.6rem;
@@ -337,23 +390,21 @@ body {
 }
 
 .theme-pill {
-  border: 1px solid rgb(230 237 243 / 0.2);
+  border: 1px solid var(--border-color-muted);
   border-radius: 0.35rem;
-  background: rgb(10 15 28 / 0.75);
+  background: var(--bg-card);
   color: var(--text-muted);
   font-size: 0.78rem;
   padding: 0.48rem 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .theme-pill-active {
-  border-color: rgb(0 255 156 / 0.55);
+  border-color: var(--accent-green);
   color: var(--accent-green);
-  box-shadow: 0 0 10px rgb(0 255 156 / 0.14);
-}
-
-.theme-pill-red {
-  border-color: rgb(248 113 113 / 0.3);
-  color: rgb(248 113 113);
+  background: var(--bg-menu-active);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .alert-bar {
@@ -366,8 +417,9 @@ body {
   align-items: center;
   gap: 0.75rem;
   border-top: 1px solid rgb(248 113 113 / 0.4);
-  background: rgb(127 29 29 / 0.82);
+  background: rgb(127 29 29 / 0.9);
   padding: 0.6rem 1rem;
+  backdrop-filter: blur(8px);
 }
 
 .alert-btn {
@@ -394,9 +446,9 @@ body {
 
 .login-panel {
   width: min(360px, 92vw);
-  border: 1px solid rgb(230 237 243 / 0.14);
+  border: 1px solid var(--border-color);
   border-radius: 0.45rem;
-  background: rgb(13 19 38 / 0.75);
+  background: var(--bg-panel);
   padding: 1rem;
 }
 
@@ -426,9 +478,9 @@ body {
 
 .login-field input {
   width: 100%;
-  border: 1px solid rgb(230 237 243 / 0.16);
+  border: 1px solid var(--border-color-muted);
   border-radius: 0.35rem;
-  background: rgb(10 15 28 / 0.9);
+  background: var(--bg-input);
   color: var(--text-main);
   padding: 0.5rem 0.55rem;
 }
@@ -454,8 +506,8 @@ body {
 /* ─── Terminal Panel ─── */
 .terminal-panel {
   margin-top: 1.25rem;
-  border-color: rgba(0, 255, 156, 0.18);
-  background: rgba(5, 14, 28, 0.75);
+  border-color: var(--border-color-active);
+  background: var(--terminal-bg);
   backdrop-filter: blur(12px);
   animation: terminalSlideIn 0.25s ease-out;
 }
@@ -465,6 +517,7 @@ body {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
