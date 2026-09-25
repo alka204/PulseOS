@@ -7,6 +7,7 @@ import {
   Search,
   Settings,
   SlidersHorizontal,
+  Terminal,
   UserCircle2,
 } from "lucide-react";
 import {
@@ -24,6 +25,9 @@ import Login from "./components/Login.jsx";
 import Overview from "./components/Overview.jsx";
 import HostDetails from "./components/HostDetails.jsx";
 import DockerMonitor from "./components/DockerMonitor.jsx";
+import TerminalPanel, {
+  isTerminalCommand,
+} from "./components/TerminalPanel.jsx";
 
 const TOKEN_KEY = "pulse-token";
 const USER_KEY = "pulse-user";
@@ -113,6 +117,8 @@ function DashboardLayout({ onLogout, user }) {
   });
   const [themeMode, setThemeMode] = useState("green");
   const [search, setSearch] = useState("");
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const [terminalCmd, setTerminalCmd] = useState(null);
   const navigate = useNavigate();
   const [savedState, setSavedState] = useState(() =>
     JSON.stringify({
@@ -178,6 +184,10 @@ function DashboardLayout({ onLogout, user }) {
     { to: "/docker", label: "Docker Monitor", icon: Box },
     { to: "/settings", label: "Settings", icon: Settings },
   ];
+
+  function toggleTerminal() {
+    setTerminalOpen((prev) => !prev);
+  }
 
   const isStable =
     (system?.cpu?.usagePercent ?? 0) < thresholds.cpu &&
@@ -288,6 +298,16 @@ Generated: ${new Date().toLocaleString()}
             })}
           </div>
         </nav>
+        <div className="border-t border-white/10 px-3 pb-2">
+          <button
+            type="button"
+            onClick={toggleTerminal}
+            className={`menu-item w-full ${terminalOpen ? "menu-item-active" : ""}`}
+          >
+            <Terminal size={15} />
+            <span>Terminal</span>
+          </button>
+        </div>
         <div className="border-t border-white/10 px-4 py-4">
           <div className="user-chip">
             <UserCircle2 size={16} className="text-accent" />
@@ -357,10 +377,37 @@ Generated: ${new Date().toLocaleString()}
                   query.includes("preference")
                 ) {
                   navigate("/settings");
+                } else if (
+                  query.includes("terminal")
+                ) {
+                  setTerminalOpen(true);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const cmd = search.trim();
+                  if (isTerminalCommand(cmd)) {
+                    setTerminalCmd(cmd + ":" + Date.now());
+                    setTerminalOpen(true);
+                    setSearch("");
+                  }
                 }
               }}
             />
           </div>
+          <button
+            type="button"
+            onClick={toggleTerminal}
+            className={`rounded-lg p-2 transition ${
+              terminalOpen
+                ? "bg-accent/20 text-accent"
+                : "text-muted hover:bg-white/10 hover:text-main"
+            }`}
+            aria-label="Toggle terminal"
+            title="Toggle terminal"
+          >
+            <Terminal size={16} />
+          </button>
           <div className="flex items-center gap-2">
             <button type="button" className="btn-muted" onClick={exportLogs}>
               EXPORT LOGS
@@ -372,6 +419,15 @@ Generated: ${new Date().toLocaleString()}
         </header>
 
         <Outlet context={shared} />
+
+        {terminalOpen && (
+          <TerminalPanel
+            initialCommand={
+              terminalCmd ? terminalCmd.split(":")[0] : null
+            }
+            onClose={() => setTerminalOpen(false)}
+          />
+        )}
       </main>
 
       {hasUnsavedChanges && (
